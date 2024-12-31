@@ -1,0 +1,4 @@
+name: 'Players reserve'
+description: 'Reservations for Players Inc'
+type: module
+core_version_requirement: '^10'

@@ -1,0 +1,50 @@
+<?php
+
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_BASE_FORM_ID_alter().
+ */
+function pinc_reserve_form_node_form_alter(
+  array &$form,
+  FormStateInterface &$form_state,
+  string $form_id
+): void {
+
+  // Add the form validate to check for dates, if this
+  // a game node.
+  if ($form_id == 'node_pi_ct_games_form') {
+    $form['#validate'][] = '_pinc_reserve_node_form_validate';
+  }
+}
+
+/**
+ * Helper function to ensure that there are no multiple game nodes.
+ *
+ * @param array $form
+ *   The form.
+ * @param FormStateInterface $form_state
+ *   The form state.
+ */
+function _pinc_reserve_node_form_validate(
+  array &$form,
+  FormStateInterface $form_state
+): void {
+
+  $game_date = $form_state->getValue('field_game_date');
+
+  if ($game_date) {
+
+    $game_date = $game_date[0]['value']->format('Y-m-d');
+
+    $query = \Drupal::entityQuery('node');
+    $query->condition('title', $game_date, 'CONTAINS');
+    $query->accessCheck(FALSE);
+    $nids = $query->execute();
+
+    if (count($nids) > 0) {
+      $form_state->setError($form['field_game_date']['widget'], t('There is already a game with that date.'));
+    }
+  }
+}
+

@@ -1,0 +1,9 @@
+pinc_reserve.reserve_date:
+  path: '/reserve/add/{date}'
+  defaults:
+    _form: '\Drupal\pinc_reserve\Form\PlayersReserveAddForm'
+    _title: 'Players Inc. Reserve'
+  requirements:
+    _permission: 'access content'
+  options:
+    no_cache: 'TRUE'

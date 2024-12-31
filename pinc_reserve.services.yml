@@ -1,0 +1,4 @@
+services:
+  pinc_reserve.players_service:
+    class: Drupal\pinc_reserve\Service\PlayersService
+    arguments: ['@entity_type.manager', '@current_user', '@messenger', '@database']
