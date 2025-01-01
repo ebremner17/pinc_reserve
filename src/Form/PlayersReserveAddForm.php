@@ -365,7 +365,7 @@ class PlayersReserveAddForm extends FormBase {
     );
 
     // Load the games.
-    $games = $this->playersService->getGames($node, FALSE, $page_values['uid']);
+    $games = $this->playersService->getGames($node, $page_values['uid']);
 
     // Reset the options and default values array.
     $options = [];
@@ -444,6 +444,7 @@ class PlayersReserveAddForm extends FormBase {
     $values = $form_state->getValues();
     $page_values = $form_state->get('page_values');
 
+    // Get the node with the date selected.
     $node = $this->entityTypeManager->getStorage('node')
       ->load($values['nid']);
 
@@ -459,7 +460,11 @@ class PlayersReserveAddForm extends FormBase {
       // Load all paragraph objects.
       $paragraphs_objects = $paragraph_storage->loadMultiple($ids);
 
+      // Step through each of the paragraphs and set the players.
       foreach ($paragraphs_objects as $paragraph_object) {
+
+        // Get the game type from the paragraph.
+        $game_type = $paragraph_object->get('field_game_type')->getValue()[0]['value'];
 
         // Array to store current players.
         $players = [];
@@ -469,11 +474,28 @@ class PlayersReserveAddForm extends FormBase {
 
         // Step through each of the current players and set in array.
         foreach ($current_players as $current_player) {
-          $players[] = $current_player['value'];
+
+          // If the current player is the player registering, we have
+          // to check if they have signed up for the game.
+          // If it is not the registering then add the player
+          // to the array.
+          if ($current_player['value'] == $values['uid']) {
+
+            // Only add the player if the registered for the game.
+            if ($values['games'][$game_type] == $game_type) {
+              $players[] = $current_player['value'];
+            }
+          }
+          else {
+            $players[] = $current_player['value'];
+          }
         }
 
         // If registering player is not in the array, then add it.
-        if (!in_array($page_values['uid'], $players)) {
+        if (
+          $values['games'][$game_type] == $game_type &&
+          !in_array($page_values['uid'], $players)
+        ) {
           $players[] = $page_values['uid'];
         }
 
@@ -486,6 +508,7 @@ class PlayersReserveAddForm extends FormBase {
     // Add the message.
     $this->messenger->addStatus($this->t('You reservation has been successfully updated.'));
 
+    // Redirect the form to the front page.
     $form_state->setRedirect('<front>');
   }
 
@@ -509,7 +532,6 @@ class PlayersReserveAddForm extends FormBase {
     // Load the games.
     $games = $this->playersService->getGames(
       $node,
-      FALSE,
       $page_values['uid']
     );
 

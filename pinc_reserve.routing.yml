@@ -7,3 +7,10 @@ pinc_reserve.reserve_date:
     _permission: 'access content'
   options:
     no_cache: 'TRUE'
+pinc_reserve.floor:
+  path: '/floor'
+  defaults:
+    _form: 'Drupal\pinc_reserve\Form\PlayersReserveFloorForm'
+    _title: 'Players Inc. Reserve'
+  requirements:
+    _custom_access:  '\Drupal\pinc_reserve\Form\PlayersReserveFloorForm::access'

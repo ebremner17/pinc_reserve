@@ -159,23 +159,14 @@ class PlayersService {
    *
    * @param $node
    *   The node.
-   * @param bool $remove_tourney_flag
-   *   Flag to remove tournaments.
    *
    * @return array
    *   Array of games.
-   *
-   * @throws \Drupal\Component\Plugin\Exception\InvalidPluginDefinitionException
-   * @throws \Drupal\Component\Plugin\Exception\PluginNotFoundException
    */
-  public function getGames($node, $remove_tourney_flag = FALSE, int $uid = NULL) {
+  public function getGames($node, int $uid = NULL) {
 
     if (!$node) {
       return [];
-    }
-
-    if (!$uid) {
-      $uid = $this->account->id();
     }
 
     $games = [];
@@ -206,35 +197,31 @@ class PlayersService {
         // Get the game type field.
         $game_type = $paragraph->field_game_type->value;
 
-        // If this has a remove tourney flag and it is a
-        // tourney just skip it.
-        if (
-          $remove_tourney_flag &&
-          str_contains($game_type, 'Tournament')
-        ) {
-          continue;
-        }
-
-        $list = '';
-        $reserved_flag = FALSE;
+        // Reset the list.
+        $list = [];
 
         // If user is floor get the list.
         if ($this->isFloor()) {
-          $list = $this->getList($node->id(), $game_type);
+
+          foreach ($paragraph->field_game_players as $player) {
+            $user = $this->entityTypeManager->getStorage('user')
+              ->load($player->value);
+            $list[] = [
+              'first_name' => $user->field_first_name->value,
+              'last_name' => $user->field_last_name->value,
+            ];
+          }
         }
         else {
 
-//          $query = $this->database->select('players_reserve', 'pr')
-//            ->fields('pr', ['reserve_id'])
-//            ->condition('pr.nid', $node->id())
-//            ->condition('pr.uid', $uid)
-//            ->condition('pr.game_type', $game_type);
-//
-//          $result = $query->execute()->fetchAssoc();
-//
-//          if ($result) {
-//            $reserved_flag = TRUE;
-//          }
+          $players = $paragraph->field_game_players->getValue();
+
+          foreach ($players as $player) {
+            if ($player['value'] == $uid) {
+              $reserved_flag = TRUE;
+              break;
+            }
+          }
         }
 
         // If this is the current date, get the info about
@@ -249,8 +236,9 @@ class PlayersService {
         $games[] = [
           'title' => $this->getGameName($game_type),
           'game_type' => $game_type,
+          'list' => $list,
           'start_time' => $start_time,
-          'reserved_flag' => $reserved_flag,
+          'reserved_flag' => $reserved_flag ?? NULL,
           'display_date' => date('l M j, Y', strtotime($current_date)),
         ];
       }
@@ -298,31 +286,6 @@ class PlayersService {
       'reserved' => $reserved,
       'seated' => $show_seated ? $seated : NULL,
     ];
-  }
-
-  /**
-   * Function to get the list of players.
-   *
-   * @param int $nid
-   *   The node id.
-   * @param string $game_type
-   *   The game type.
-   *
-   * @return mixed
-   *   The list of players.
-   */
-  public function getList(int $nid, string $game_type) {
-    $query = $this->database
-      ->select('players_reserve', 'pr')
-      ->fields('pr', ['reserve_id', 'uid', 'first_name', 'last_name', 'reserve_time'])
-      ->condition('pr.nid', $nid)
-      ->condition('pr.game_type', $game_type)
-      ->condition('pr.seated', 0)
-      ->condition('pr.removed', 0)
-      ->condition('pr.pleft', 0)
-      ->orderBy('pr.reserve_time');
-
-    return $query->execute()->fetchAll();
   }
 
   /**
